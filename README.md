@@ -1,53 +1,17 @@
 # 大模型测试脚本集合
 
-这个仓库是一组用于测试大模型接口可用性的 Python 脚本，覆盖了不同调用方式：标准库 HTTP、`requests`、OpenAI SDK（走 OpenRouter 网关）。
+本仓库用于测试不同模型与网关的接口可用性、基础编程输出质量与批量评测能力。
 
-## 脚本清单与特点
+## 当前维护脚本
 
-### `test.py`
+- `run.py`：统一运行入口（推荐）
+- `test.py`：通用 OpenAI 兼容接口连通性测试（支持批量模型）
+- `testopenrouter.py`：OpenRouter + requests 最小请求示例
+- `testopenai.py`：OpenRouter + OpenAI SDK 示例
+- `testGLM.py`：GLM 编程能力批量评测与报告导出
+- `testDeepSeek.py`：DeepSeek 编程能力批量评测与报告导出
 
-定位：通用连通性与批量模型测试脚本（推荐优先使用）。
-
-特点：
-- 仅依赖 Python 标准库（无第三方包）。
-- 支持命令行参数和环境变量两种配置方式。
-- 支持单模型与多模型批量测试（`--models`）。
-- 自动尝试两种路径：`/v1/chat/completions` 和 `/chat/completions`，兼容性更好。
-- 输出成功/失败、耗时、错误原因，并返回合适退出码（0/1）。
-
-适合场景：CI 连通性检查、网关迁移验证、模型白名单批量巡检。
-
----
-
-### `testopenrouter.py`
-
-定位：使用 `requests` 直接调用 OpenRouter Chat Completions 的简洁脚本。
-
-特点：
-- 基于 HTTP 原始请求，便于理解请求头和请求体细节。
-- 使用 `OPENROUTER_API_KEY` 等环境变量，避免硬编码密钥。
-- 内置超时与异常处理，失败时能快速定位问题。
-- 结构清晰，适合作为“最小可运行示例”和排障模板。
-
-适合场景：快速验证 OpenRouter 单模型调用、学习接口字段含义、调试请求参数。
-
----
-
-### `testopenai.py`
-
-定位：使用 OpenAI Python SDK 调用 OpenRouter（通过 `base_url`）的示例脚本。
-
-特点：
-- 使用 SDK 调用，代码量少、可读性高。
-- 通过 `OPENROUTER_BASE_URL`、`OPENROUTER_MODEL` 等环境变量可灵活切换。
-- 包含基础异常处理和返回内容兜底，适合日常本地验证。
-- 与原生 OpenAI SDK 习惯一致，后续迁移成本低。
-
-适合场景：你项目里本来就使用 OpenAI SDK，希望最小改动接入 OpenRouter。
-
-## 开发环境与测试流程
-
-以下命令用于本项目开发过程中的虚拟环境管理、依赖安装与测试准备。
+## 快速开始
 
 ### 1) 创建并激活虚拟环境（macOS/Linux）
 
@@ -59,151 +23,85 @@ source venv/bin/activate
 ### 2) 安装依赖
 
 ```bash
-pip install requests openai
-```
-
-### 3) 检查当前环境已安装包
-
-```bash
-pip list
-```
-
-### 4) 运行测试脚本
-
-```bash
-python3 test.py --base-url "https://openrouter.ai/api" --model "openai/gpt-5.2"
-python3 testopenrouter.py
-python3 testopenai.py
-```
-
-### 5) 导出与复用依赖
-
-```bash
-pip freeze > requirements.txt
 pip install -r requirements.txt
 ```
 
-### 6) 退出虚拟环境
+### 3) 配置环境变量
 
 ```bash
-deactivate
+cp .env.example .env
 ```
 
-## 开发过程常用 Git 指令
+把 `.env` 中的占位符替换为真实 API Key 与模型名。
 
-以下指令覆盖日常开发中最常用的 Git 操作，便于快速上手和排查。
-
-### 1) 首次初始化与远程仓库
+## 统一入口运行（推荐）
 
 ```bash
-git init
-git remote add origin <your-repo-url>
-git remote -v
+python3 run.py test --base-url "https://openrouter.ai/api" --model "openai/gpt-5.2"
+python3 run.py openrouter
+python3 run.py openai
+python3 run.py glm --model glm-4 --output glm_report.md
+python3 run.py deepseek --model deepseek-chat --output deepseek_report.md
 ```
 
-### 2) 查看状态与差异
-
-```bash
-git status
-git diff
-git diff --staged
-```
-
-### 3) 新建与切换分支
-
-```bash
-git branch
-git checkout -b feature/your-feature
-git switch main
-```
-
-### 4) 提交代码
-
-```bash
-git add .
-git commit -m "feat: add model test script"
-git log --oneline --graph -n 10
-```
-
-### 5) 同步远程仓库
-
-```bash
-git pull --rebase origin main
-git push -u origin feature/your-feature
-```
-
-### 6) 合并与删除分支
-
-```bash
-git checkout main
-git merge feature/your-feature
-git branch -d feature/your-feature
-```
-
-### 7) 撤销与回退（谨慎使用）
-
-```bash
-git restore <file>
-git restore --staged <file>
-git reset --soft HEAD~1
-git reset --hard HEAD~1
-```
-
-### 8) 临时保存现场
-
-```bash
-git stash
-git stash list
-git stash pop
-```
-
-### 9) 推荐开发节奏
-
-```bash
-git checkout -b feature/xxx
-git add .
-git commit -m "feat: ..."
-git pull --rebase origin main
-git push -u origin feature/xxx
-```
-
-## 快速使用
-
-### 1) 准备环境变量（macOS/Linux）
-
-```bash
-export OPENROUTER_API_KEY="你的key"
-export OPENROUTER_MODEL="openai/gpt-5.2"
-export OPENROUTER_SITE_URL="https://example.com"
-export OPENROUTER_SITE_NAME="LLM Test"
-```
-
-说明：
-- `testopenai.py` 会从 `OPENROUTER_MODEL` / `LLM_MODEL` / `OPENAI_MODEL` 读取模型名（至少设置一个）。
-- `test.py` 优先使用命令行参数，其次读取 `LLM_MODEL` / `OPENAI_MODEL`。
-
-### 2) 运行脚本
+## 原始脚本运行
 
 ```bash
 python3 test.py --base-url "https://openrouter.ai/api" --model "openai/gpt-5.2"
 python3 testopenrouter.py
 python3 testopenai.py
+python3 testGLM.py --model glm-4 --output glm_report.md
+python3 testDeepSeek.py --model deepseek-chat --output deepseek_report.md
 ```
 
-## 依赖说明
+## 关键环境变量
 
-- `test.py`：无第三方依赖。
-- `testopenrouter.py`：需要 `requests`。
-- `testopenai.py`：需要 `openai`。
+### 通用/兼容接口（`test.py`）
 
-可安装：
+- `LLM_BASE_URL` / `OPENAI_BASE_URL`
+- `LLM_API_KEY` / `OPENAI_API_KEY`
+- `LLM_MODEL` / `OPENAI_MODEL`
+- `LLM_MODELS` / `OPENAI_MODELS`（可选，逗号分隔）
+
+### OpenRouter（`testopenrouter.py` / `testopenai.py`）
+
+- 必填：`OPENROUTER_API_KEY`
+- 常用：`OPENROUTER_MODEL`
+- 可选：`OPENROUTER_BASE_URL`、`OPENROUTER_SITE_URL`、`OPENROUTER_SITE_NAME`
+
+### GLM 评测（`testGLM.py`）
+
+- 必填：`GLM_API_KEY`
+- 可选：`GLM_MODEL`、`GLM_API_URL`、`GLM_TEMPERATURE`、`GLM_TIMEOUT`、`GLM_SLEEP_SECONDS`
+
+### DeepSeek 评测（`testDeepSeek.py`）
+
+- 必填：`DEEPSEEK_API_KEY`
+- 可选：`DEEPSEEK_MODEL`、`DEEPSEEK_API_URL`、`DEEPSEEK_TEMPERATURE`、`DEEPSEEK_TIMEOUT`、`DEEPSEEK_SLEEP_SECONDS`
+
+## 脚本选型建议
+
+- 只做接口连通性与批量模型巡检：`test.py`
+- 看最底层 HTTP 请求细节：`testopenrouter.py`
+- 用 SDK 方式接入 OpenRouter：`testopenai.py`
+- 要做 GLM 编程能力打分与报告：`testGLM.py`
+- 要做 DeepSeek 编程能力打分与报告：`testDeepSeek.py`
+
+## 可运行性检查（已完成）
+
+本仓库已完成以下检查：
+
+- 全部 Python 脚本语法编译通过（`compileall`）
+- CLI 参数入口正常（`run.py -h`、`test.py -h`、`testGLM.py -h`、`testDeepSeek.py -h`）
+
+说明：真实 API 调用依赖有效密钥与网络环境，未在文档检查阶段强制执行在线请求。
+
+## 常用 Git 指令
 
 ```bash
-pip install requests openai
+git status
+git add .
+git commit -m "chore: finalize scripts and docs"
+git pull --rebase origin main
+git push
 ```
-
-## 选型建议
-
-- 要“最稳健批量验证”：用 `test.py`。
-- 要“看清 HTTP 细节”：用 `testopenrouter.py`。
-- 要“贴近应用代码（SDK）”：用 `testopenai.py`。
