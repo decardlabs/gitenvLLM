@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -83,7 +85,11 @@ def parse_args() -> argparse.Namespace:
 		help="批量模型名（逗号分隔），例如 gpt-4o-mini,gpt-4.1",
 	)
 	parser.add_argument("--timeout", type=float, default=30.0, help="请求超时秒数，默认 30")
-	parser.add_argument("--prompt", default="请回复：连接测试成功", help="测试提示词")
+	parser.add_argument(
+		"--prompt",
+		default=os.getenv("LLM_PROMPT") or os.getenv("OPENAI_PROMPT") or "请回复：连接测试成功",
+		help="测试提示词（也可用环境变量 LLM_PROMPT 或 OPENAI_PROMPT）",
+	)
 	parser.add_argument("--max-tokens", type=int, default=32, help="最大生成 token，默认 32")
 	args = parser.parse_args()
 
